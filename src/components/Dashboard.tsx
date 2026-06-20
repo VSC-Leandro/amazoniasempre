@@ -628,7 +628,7 @@ export default function Dashboard() {
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5 animate-fade-in">
           <div className="text-2xl">👥</div>
           <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Participantes</p>
-          <p className="text-2xl font-black text-[#2D6A4F]">481</p>
+          <p className="text-2xl font-black text-[#2D6A4F]">{UNIQUE_PARTICIPANTS.total_unique}</p>
         </div>
 
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5">
