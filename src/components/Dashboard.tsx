@@ -13,15 +13,79 @@ import {
   ORG_CTY,
   AF_PILLARS,
   AF_SUBS,
-  COP30_PIL
+  COP30_PIL,
+  INST_SUMMARY,
+  INST_BY_SECTOR,
+  INST_BY_COUNTRY,
+  CONSOLIDATED_INSTITUTIONS,
+  UNIQUE_PARTICIPANTS
 } from "../data";
 
 export default function Dashboard() {
   const [activeSubTab, setActiveSubTab] = useState("geral");
+  const [instSearch, setInstSearch] = useState("");
 
   const renderGeral = () => {
+    const sectorColorsUnique: Record<string, string> = {
+      "Sociedade Civil / ONG": "#2D6A4F",
+      "Ciência, Tecnologia e Inovação": "#1B4332",
+      "Governo": "#52B788",
+      "Multilateral": "#74C69D",
+      "Setor Privado": "#D4A017",
+      "Não classificado": "#bbb",
+    };
+
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in">
+        {/* Participantes únicos vs presenças totais */}
+        <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-[#1B4332] mb-1 border-b border-[#f0f7f3] pb-2">
+            Participantes Únicos (pessoas físicas)
+          </h3>
+          <p className="text-[11px] text-gray-500 mt-2 mb-4">
+            481 é o número de presenças em mesas (uma pessoa que falou em 3 mesas conta 3 vezes).
+            Já abaixo está o número de <strong>pessoas únicas</strong> — cada palestrante contado uma só vez,
+            independentemente de quantas mesas participou. País não é classificado aqui porque a nacionalidade
+            de cada pessoa não está disponível; apenas o setor de origem da instituição vinculada.
+          </p>
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#1B4332]">{UNIQUE_PARTICIPANTS.total_unique}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Pessoas Únicas</p>
+            </div>
+            <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#52B788]">{UNIQUE_PARTICIPANTS.in_1_session}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Em 1 Mesa</p>
+            </div>
+            <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#D4A017]">{UNIQUE_PARTICIPANTS.in_2plus_sessions}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Em 2+ Mesas</p>
+            </div>
+          </div>
+          <p className="text-[11px] font-bold text-[#1B4332] uppercase tracking-wider mb-3">
+            Por Setor (% de pessoas únicas)
+          </p>
+          <div className="space-y-3">
+            {Object.entries(UNIQUE_PARTICIPANTS.by_sector_pct).map(([name, pct], idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-700 font-semibold">
+                  <span>{name}</span>
+                  <span className="text-[#2D6A4F]">
+                    {(UNIQUE_PARTICIPANTS.by_sector as Record<string, number>)[name]} · {pct}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, backgroundColor: sectorColorsUnique[name] || "#2D6A4F" }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
           <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
             Participantes por Categoria (%)
@@ -70,8 +134,8 @@ export default function Dashboard() {
           <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
             Participantes por País de Origem
           </h3>
-          <div className="space-y-3">
-            {Object.entries(PART_CTY).slice(0, 10).map(([name, val], idx) => (
+          <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+            {Object.entries(PART_CTY).map(([name, val], idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-xs text-gray-600 font-medium">
                   <span className="truncate max-w-[200px]">{name}</span>
@@ -92,8 +156,8 @@ export default function Dashboard() {
           <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
             Organizadores por Sede da Entidade
           </h3>
-          <div className="space-y-3">
-            {Object.entries(ORG_CTY).slice(0, 10).map(([name, val], idx) => (
+          <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+            {Object.entries(ORG_CTY).map(([name, val], idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-xs text-gray-600 font-medium">
                   <span className="truncate max-w-[200px]">{name}</span>
@@ -108,6 +172,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     );
@@ -192,71 +257,218 @@ export default function Dashboard() {
   };
 
   const renderEntidades = () => {
+    const sectorColors: Record<string, string> = {
+      "Civil Society/ONG": "#2D6A4F",
+      "Science, technology and innovation": "#1B4332",
+      "Government": "#52B788",
+      "Multilateral": "#74C69D",
+      "Private Sector": "#D4A017",
+    };
+
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in">
+        {/* Resumo executivo da consolidação */}
         <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
-            Organizadores Frequentes (Nº Mesas)
+          <h3 className="text-sm font-bold text-[#1B4332] mb-1 border-b border-[#f0f7f3] pb-2">
+            Instituições Consolidadas — Organizadoras + Participantes (sem duplicatas)
           </h3>
-          <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
-            {ORG_COUNT.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
-              >
-                <span className="text-xs text-gray-700 font-semibold truncate max-w-[200px]" title={item.name}>
-                  {item.name}
-                </span>
-                <span className="bg-[#f0f7f3] text-[#1B4332] font-semibold text-xs px-2.5 py-1 rounded-full border border-[#d0e8dc]">
-                  {item.count} {item.count === 1 ? "mesa" : "mesas"}
-                </span>
-              </div>
-            ))}
+          <p className="text-[11px] text-gray-500 mt-2 mb-4">
+            Total único de instituições envolvidas no evento, combinando quem organizou mesas (Host Institutions)
+            e quem participou como convidado (Participants&apos; Institutions), eliminando repetições entre as duas bases.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#1B4332]">{INST_SUMMARY.total_unique}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Total Único</p>
+            </div>
+            <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#52B788]">{INST_SUMMARY.host_only}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Só Organizadoras</p>
+            </div>
+            <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#74C69D]">{INST_SUMMARY.participants_only}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Só Participantes</p>
+            </div>
+            <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-[#D4A017]">{INST_SUMMARY.both}</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Ambos os Papéis</p>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
-            Instituições Frequentes (Todos Papéis)
-          </h3>
-          <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
-            {INST_COUNT.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 font-semibold text-[11px] w-5 text-right">{idx + 1}.</span>
-                  <span className="text-xs text-gray-700 font-semibold truncate max-w-[180px]" title={item.name}>
+        {/* Setor e País consolidados */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
+              Instituições por Setor (% do total único)
+            </h3>
+            <div className="space-y-3.5">
+              {INST_BY_SECTOR.map((s, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-xs text-gray-700 font-semibold">
+                    <span>{s.sector}</span>
+                    <span className="text-[#2D6A4F]">{s.total} · {s.pct}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${s.pct}%`, backgroundColor: sectorColors[s.sector] || "#2D6A4F" }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-gray-400">
+                    {s.host_only} só organizadoras · {s.part_only} só participantes · {s.both} ambos
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
+              Instituições por País — {INST_BY_COUNTRY.length} países (% do total único)
+            </h3>
+            <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+              {INST_BY_COUNTRY.map((c, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-xs text-gray-700 font-semibold">
+                    <span className="truncate max-w-[200px]" title={c.country}>{c.country}</span>
+                    <span className="text-[#2D6A4F]">{c.total} · {c.pct}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#74C69D] h-full rounded-full"
+                      style={{ width: `${Math.max(c.pct, 1)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Rankings de frequência (mesas) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
+              Organizadores Frequentes (Nº Mesas)
+            </h3>
+            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+              {ORG_COUNT.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
+                >
+                  <span className="text-xs text-gray-700 font-semibold truncate max-w-[200px]" title={item.name}>
                     {item.name}
                   </span>
+                  <span className="bg-[#f0f7f3] text-[#1B4332] font-semibold text-xs px-2.5 py-1 rounded-full border border-[#d0e8dc]">
+                    {item.count} {item.count === 1 ? "mesa" : "mesas"}
+                  </span>
                 </div>
-                <span className="bg-emerald-50 text-[#2D6A4F] font-semibold text-xs px-2 py-0.5 rounded-full border border-emerald-100">
-                  {item.count}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
+              Instituições Frequentes (Todos Papéis)
+            </h3>
+            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+              {INST_COUNT.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 font-semibold text-[11px] w-5 text-right">{idx + 1}.</span>
+                    <span className="text-xs text-gray-700 font-semibold truncate max-w-[180px]" title={item.name}>
+                      {item.name}
+                    </span>
+                  </div>
+                  <span className="bg-emerald-50 text-[#2D6A4F] font-semibold text-xs px-2 py-0.5 rounded-full border border-emerald-100">
+                    {item.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
+              Participantes em Múltiplas Mesas (2+)
+            </h3>
+            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+              {PART_COUNT.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
+                >
+                  <span className="text-xs text-[#2D6A4F] font-semibold truncate max-w-[180px]">
+                    {item.name}
+                  </span>
+                  <span className="bg-[#D4A017]/10 text-[#cda01b] font-bold text-xs px-2.5 py-0.5 rounded-full border border-[#D4A017]/20">
+                    {item.count} mesas
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Lista completa pesquisável */}
         <div className="bg-white border border-[#d0e8dc] rounded-2xl p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-[#1B4332] mb-4 border-b border-[#f0f7f3] pb-2">
-            Participantes em Múltiplas Mesas (2+)
+          <h3 className="text-sm font-bold text-[#1B4332] mb-1 border-b border-[#f0f7f3] pb-2">
+            Lista Completa de Instituições ({CONSOLIDATED_INSTITUTIONS.length})
           </h3>
-          <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
-            {PART_COUNT.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#d0e8dc] transition-all"
-              >
-                <span className="text-xs text-[#2D6A4F] font-semibold truncate max-w-[180px]">
-                  {item.name}
-                </span>
-                <span className="bg-[#D4A017]/10 text-[#cda01b] font-bold text-xs px-2.5 py-0.5 rounded-full border border-[#D4A017]/20">
-                  {item.count} mesas
-                </span>
-              </div>
-            ))}
+          <input
+            type="text"
+            placeholder="Buscar instituição, setor ou país…"
+            className="w-full mt-3 mb-3 px-3 py-2 text-xs border border-[#d0e8dc] rounded-lg outline-none focus:border-[#2D6A4F]"
+            onChange={(e) => setInstSearch(e.target.value)}
+          />
+          <div className="max-h-[420px] overflow-y-auto pr-1">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-[#f0f7f3]">
+                <tr>
+                  <th className="text-left p-2 font-bold text-[#1B4332]">Instituição</th>
+                  <th className="text-left p-2 font-bold text-[#1B4332]">Setor</th>
+                  <th className="text-left p-2 font-bold text-[#1B4332]">País</th>
+                  <th className="text-left p-2 font-bold text-[#1B4332]">Papel</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CONSOLIDATED_INSTITUTIONS
+                  .filter((inst) => {
+                    const q = instSearch.toLowerCase();
+                    if (!q) return true;
+                    return (
+                      inst.name.toLowerCase().includes(q) ||
+                      inst.sector.toLowerCase().includes(q) ||
+                      inst.country.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((inst, idx) => (
+                    <tr key={idx} className="border-t border-[#f0f7f3] hover:bg-gray-50">
+                      <td className="p-2 font-semibold text-gray-700">{inst.name}</td>
+                      <td className="p-2 text-gray-500">{inst.sector}</td>
+                      <td className="p-2 text-gray-500">{inst.country}</td>
+                      <td className="p-2">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                            inst.role === "Ambos"
+                              ? "bg-[#D4A017]/10 text-[#bda017] border border-[#D4A017]/20"
+                              : inst.role.includes("Organiz")
+                              ? "bg-emerald-50 text-[#2D6A4F] border border-emerald-100"
+                              : "bg-[#f0f3fd] text-gray-500 border border-[#e0e3fd]"
+                          }`}
+                        >
+                          {inst.role}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -415,14 +627,14 @@ export default function Dashboard() {
 
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5 animate-fade-in">
           <div className="text-2xl">👥</div>
-          <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Membros</p>
+          <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Participantes</p>
           <p className="text-2xl font-black text-[#2D6A4F]">481</p>
         </div>
 
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5">
           <div className="text-2xl">⚡</div>
-          <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Entidades</p>
-          <p className="text-2xl font-black text-[#1B4332]">206</p>
+          <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Instituições</p>
+          <p className="text-2xl font-black text-[#1B4332]">{INST_SUMMARY.total_unique}</p>
         </div>
 
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5">
@@ -440,7 +652,7 @@ export default function Dashboard() {
         <div className="bg-white border border-[#d0e8dc] rounded-xl p-4 text-center space-y-1.5 col-span-2 sm:col-span-1">
           <div className="text-2xl">🌍</div>
           <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Países</p>
-          <p className="text-2xl font-black text-[#1B4332]">12+</p>
+          <p className="text-2xl font-black text-[#1B4332]">{INST_BY_COUNTRY.length}</p>
         </div>
       </div>
 
@@ -502,14 +714,10 @@ export default function Dashboard() {
       <div>
         {activeSubTab === "geral" && renderGeral()}
         {activeSubTab === "tematica" && renderTematica()}
-        {activeSubTab === "entidades" && renderEntShared().includes(activeSubTab) ? null : activeSubTab === "entidades" ? renderEntidades() : null}
+        {activeSubTab === "entidades" && renderEntidades()}
         {activeSubTab === "redes" && renderRedes()}
         {activeSubTab === "entrevistas" && renderEntrevistas()}
       </div>
     </div>
   );
-
-  function renderEntShared() {
-    return ["none"];
-  }
 }

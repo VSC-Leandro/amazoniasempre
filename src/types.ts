@@ -63,3 +63,30 @@ export interface PctItem {
   name: string;
   pct: number;
 }
+
+export interface SectorRow {
+  sector: string;
+  total: number;
+  pct: number;
+  host_only: number;
+  part_only: number;
+  both: number;
+}
+
+export interface CountryRow {
+  country: string;
+  total: number;
+  pct: number;
+  host_only: number;
+  part_only: number;
+  both: number;
+}
+
+export interface ConsolidatedInstitution {
+  name: string;
+  sector: string;
+  country: string;
+  host_only: string;
+  participant_only: string;
+  role: string;
+}
